@@ -4,6 +4,9 @@
     .col
       h1 Hashes
   .row.mt-2
+    .col
+      .alert.alert-danger(v-if='hashError') {{hashError}}
+  .row.mt-2
     .col-3
       select.form-select(v-model='hashMode')
         option(selected value='sha256') SHA-256 
@@ -16,6 +19,11 @@
     .col-6
       label Digest ({{hashOut.length}}):
       textarea.form-control(:value='hashOut' rows=5 disabled)
+  .row.mt-2
+    .col
+      .form-check.form-switch
+        input.form-check-input(type='checkbox' v-model='isHex')
+        label.form-check-label Input is {{ isHex ? 'Hex' : 'ASCII' }}
   .row.mt-2
     .col
       button(@click='computeHash()') Hash
@@ -33,8 +41,10 @@ export default Vue.extend({
   data() {
     return {
       hashMode    : 'sha256' as HashMode,
-      hashIn      : 'Message to hash',
+      hashIn      : 'Some text',
       hashOut     : '',
+      hashError   : '',
+      isHex       : false,
     }
   },
   methods: {
@@ -42,9 +52,20 @@ export default Vue.extend({
       if (!this.hashIn) {
         return;
       }
-      const i = this.hashIn;
-      const hashMode = this.hashMode as HashMode; // oh, typscript... :)
-      this.hashOut = forge.md[hashMode].create().update(i).digest().toHex();
+      this.hashError = '';
+      try {
+        let i = this.hashIn;
+        if (this.isHex) {
+          if (!this.hashIn.match(/^[0-9a-fA-F]+$/)) {
+            throw new Error('Input is not valid hex');
+          }
+          i = forge.util.hexToBytes(this.hashIn);
+        }
+        const hashMode = this.hashMode as HashMode; // oh, typscript... :)
+        this.hashOut = forge.md[hashMode].create().update(i).digest().toHex();
+      } catch (error) {
+        this.hashError = error as string;
+      }
     },  
   }
 });

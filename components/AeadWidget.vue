@@ -12,7 +12,7 @@
         option(value='chacha-poly') ChaCha20-Poly1305
   .row.mt-2
     .col-12
-      label Key (hex) must be 32, 48, or 64 digits ({{ aeadKey ? aeadKey.length : 0 }}):
+      label Key (hex) must be 32, 48, or 64 digits ({{ aeadKey.length }}):
       input.form-control(type='text' v-model='aeadKey')
   .row.mt-2
     .col-6
@@ -21,7 +21,7 @@
       button(@click='aeadKey = genRandBytes(32)') Gen 256 bits
   .row.mt-2
     .col-6
-      label IV (hex), Must be 32 digits, currently is {{ aeadIv ? aeadIv.length : 0 }}:
+      label IV (hex), Must be 32 digits, currently is {{ aeadIv.length }}:
       input.form-control(type='text' v-model='aeadIv')
   .row.mt-2
     .col-6
@@ -31,7 +31,7 @@
       .alert.alert-danger(v-if='aeadEncError') {{aeadEncError}}
   .row.mt-2
     .col-6
-      label Plaintext: (text, current length is {{ aeadIn1 ? aeadIn1.length : 0 }} bytes)
+      label Plaintext: ({{ aeadIn1.length }} chars/digits)
       textarea.form-control(v-model='aeadIn1')
     .col-6
       label Ciphertext:
@@ -42,19 +42,24 @@
       input.form-control(type='text' :value='aeadTag1' disabled)
   .row.mt-2
     .col
+      .form-check.form-switch
+        input.form-check-input(type='checkbox' v-model='isHex')
+        label.form-check-label Input is {{ isHex ? 'Hex' : 'ASCII' }}
+  .row.mt-2
+    .col
       button(@click='encAead()') Encrypt
   .row.mt-2
     .col
       .alert.alert-danger(v-if='aeadDecError') {{aeadDecError}}
   .row.mt-2
     .col-6
-      label Ciphertext (hex, current length is {{ aeadOut2 ? aeadOut2.length : 0 }} digits.):
+      label Ciphertext (hex, {{ aeadOut2.length }} digits):
       textarea.form-control(v-model='aeadOut2')
     .col-6
       label Plaintext:
       textarea.form-control(:value='aeadIn2' disabled)
     .col-6
-      label Tag (hex, current length is {{ aeadTag2 ? aeadTag2.length : 0 }} digits.):
+      label Tag (hex, {{ aeadTag2.length }} digits):
       input.form-control(type='text' v-model='aeadTag2')
   .row.mt-2
     .col
@@ -71,12 +76,12 @@ const chacha = require('chacha');
 // experiencing TS issues with scjl interface
 const sjcl = require('./sjcl.js');
 
-function doAesModeEnc (_key: string, _txt: string, _iv: string, mode: string) {
-  if (!_key || !_txt || !_iv) {
+function doAesModeEnc (_key: string, _hex: string, _iv: string, mode: string) {
+  if (!_key || !_hex || !_iv) {
   throw new Error('Cannot perform mode encrypt w/o a key, text, and an IV');
   }
 const key = sjcl.codec.hex.toBits(_key.toLowerCase());
-  const txt = sjcl.codec.utf8String.toBits(_txt);
+  const txt = sjcl.codec.hex.toBits(_hex);
   const iv = sjcl.codec.hex.toBits(_iv.toLowerCase());
   // eslint-disable-next-line new-cap
   const cipher = new sjcl.cipher.aes(key);
@@ -85,8 +90,8 @@ const key = sjcl.codec.hex.toBits(_key.toLowerCase());
   return [ res.substr(0, res.length - 32), res.substr(res.length - 32, 32)];
 }
 
-function doChaChaEnc (_key: string, _txt: string, _iv: string) {
-  if (!_key || !_txt || !_iv) {
+function doChaChaEnc (_key: string, _hex: string, _iv: string) {
+  if (!_key || !_hex || !_iv) {
     throw new Error('Cannot perform encrypt w/o a key, text, and an IV');
   }
   // Converting to buffer from hex, odd number hex digits = no leading zero
@@ -102,14 +107,15 @@ function doChaChaEnc (_key: string, _txt: string, _iv: string) {
   const key = Buffer.from(_key, 'hex');
   const iv = Buffer.from(_iv, 'hex');
   const cipher = chacha.createCipher(key, iv);
-  const ct = cipher.update(_txt, 'utf8', 'hex') + cipher.final('hex');
+  const ct = cipher.update(_hex, 'hex', 'hex');
+  cipher.final(); // in order to get tag!
   // setAAD...
   const tag = cipher.getAuthTag();
   return [ct.toString('hex'), tag.toString('hex')];
 }
 
-function doChaChaDec (_key: string, _txt: string, _iv: string, _tag: string) {
-  if (!_key || !_txt || !_iv || !_tag) {
+function doChaChaDec (_key: string, _hex: string, _iv: string, _tag: string, isHex: boolean = false) {
+  if (!_key || !_hex || !_iv || !_tag) {
     throw new Error('Cannot perform decrypt w/o a key, text, and an IV');
   }
   // Converting to buffer from hex, odd number hex digits = no leading zero
@@ -130,16 +136,15 @@ function doChaChaDec (_key: string, _txt: string, _iv: string, _tag: string) {
   const tag = Buffer.from(_tag, 'hex');
   const cipher = chacha.createDecipher(key, iv);
   cipher.setAuthTag(tag);
-  const pt = cipher.update(_txt, 'hex') + cipher.final();
+  const pt = cipher.update(_hex, 'hex');
   // setAAD...
-  return pt.toString();
+  return pt.toString(isHex ? 'hex' : undefined);
 }
 
-function doAesModeDec (_key: string, _txt: string, _iv: string, _tag: string, mode: string) {
+function doAesModeDec (_key: string, _txt: string, _iv: string, _tag: string, mode: string, isHex: boolean = false) {
   if (!_key || !_txt || !_iv) {
   throw new Error('Cannot perform mode decrypt w/o a key, text, and an IV');
   }
-  
   const key = sjcl.codec.hex.toBits(_key.toLowerCase());
   const iv = sjcl.codec.hex.toBits(_iv.toLowerCase());
   // eslint-disable-next-line new-cap
@@ -147,25 +152,28 @@ function doAesModeDec (_key: string, _txt: string, _iv: string, _tag: string, mo
   const tmp = _txt + _tag;
   const bits = sjcl.codec.hex.toBits(tmp.toLowerCase());
   const res = sjcl.mode[mode].decrypt(cipher, bits, iv, [], 8 * 16);
-  return sjcl.codec.utf8String.fromBits(res);
+  return isHex ? 
+    sjcl.codec.hex.fromBits(res) :
+    sjcl.codec.utf8String.fromBits(res);
 }
 
 export default Vue.extend({
   name: 'AeadWidget',
   data() {
-  return {
-    aeadMode     : 'aes-ccm',
-    aeadKey      : '',
-    aeadIv       : '',
-    aeadIn1      : 'Here\'s some text',
-    aeadOut1     : '',
-    aeadTag1     : '',
-    aeadIn2      : '',
-    aeadOut2     : '',
-    aeadTag2     : '',
-    aeadEncError : '',
-    aeadDecError : '',
-  }
+    return {
+      aeadMode     : 'aes-ccm',
+      aeadKey      : '',
+      aeadIv       : '',
+      aeadIn1      : 'Here\'s some text',
+      aeadOut1     : '',
+      aeadTag1     : '',
+      aeadIn2      : '',
+      aeadOut2     : '',
+      aeadTag2     : '',
+      aeadEncError : '',
+      aeadDecError : '',
+      isHex        : false,
+    }
   },
   methods: {
     genRandBytes(size: number) {
@@ -176,15 +184,22 @@ export default Vue.extend({
       this.aeadOut1 = '';
       this.aeadTag1 = '';
       try {
+        let input = this.aeadIn1;
+        if (!this.isHex) {
+          const tmp = Buffer.from(input);
+          input = tmp.toString('hex');
+        } else if (!input.match(/^[0-9a-fA-F]+$/)) {
+          throw new Error('Input is not valid hex');
+        }
         switch (this.aeadMode) {
           case 'aes-ccm':
-          [this.aeadOut1, this.aeadTag1] = doAesModeEnc(this.aeadKey, this.aeadIn1, this.aeadIv, 'ccm');
+          [this.aeadOut1, this.aeadTag1] = doAesModeEnc(this.aeadKey, input, this.aeadIv, 'ccm');
           break;
           case 'aes-gcm':
-          [this.aeadOut1, this.aeadTag1] = doAesModeEnc(this.aeadKey, this.aeadIn1, this.aeadIv, 'gcm');
+          [this.aeadOut1, this.aeadTag1] = doAesModeEnc(this.aeadKey, input, this.aeadIv, 'gcm');
           break;
           case 'chacha-poly':
-          [this.aeadOut1, this.aeadTag1] = doChaChaEnc(this.aeadKey, this.aeadIn1, this.aeadIv);
+          [this.aeadOut1, this.aeadTag1] = doChaChaEnc(this.aeadKey, input, this.aeadIv);
           break;
           default:
           throw new Error(`Unsupported mode: ${this.aeadMode}`);
@@ -199,13 +214,13 @@ export default Vue.extend({
       try {
         switch (this.aeadMode) {
           case 'aes-ccm':
-          this.aeadIn2 = doAesModeDec(this.aeadKey, this.aeadOut2, this.aeadIv, this.aeadTag2, 'ccm');
+          this.aeadIn2 = doAesModeDec(this.aeadKey, this.aeadOut2, this.aeadIv, this.aeadTag2, 'ccm', this.isHex);
           break;
           case 'aes-gcm':
-          this.aeadIn2 = doAesModeDec(this.aeadKey, this.aeadOut2, this.aeadIv, this.aeadTag2, 'gcm');
+          this.aeadIn2 = doAesModeDec(this.aeadKey, this.aeadOut2, this.aeadIv, this.aeadTag2, 'gcm', this.isHex);
           break;
           case 'chacha-poly':
-          this.aeadIn2 = doChaChaDec(this.aeadKey, this.aeadOut2, this.aeadIv, this.aeadTag2);
+          this.aeadIn2 = doChaChaDec(this.aeadKey, this.aeadOut2, this.aeadIv, this.aeadTag2, this.isHex);
           break;
           default:
           throw new Error(`Unsupported mode: ${this.aeadMode}`);

@@ -1,4 +1,3 @@
-<!-- Please remove this file from your project -->
 <template lang='pug'>
 .container
   ul#myTab.nav.nav-tabs(role='tablist')
