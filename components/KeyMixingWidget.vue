@@ -64,7 +64,8 @@ export default Vue.extend({
             this.kxShared = doEcdh(this.kxMode, this.kxPrivate, this.kxPeerPublic);
             break;
           case "x25519":  {
-              const m = await ed.getSharedSecret(this.kxPrivate, this.kxPeerPublic);
+       //       const m = await ed.getSharedSecret(this.kxPrivate, this.kxPeerPublic);
+              const m = await ed.curve25519.scalarMult(this.kxPrivate, this.kxPeerPublic);
               this.kxShared = Buffer.from(m).toString('hex');
             }
             break;

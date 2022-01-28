@@ -96,7 +96,7 @@ function doAesEcbDec (_key: string, _hex: string, hexOut: boolean = false) {
     sjcl.codec.utf8String.fromBits(res);
 }
 
-function doAesModeEnc (_key: string, _hex: string, _iv: string) {
+function doAesCtrEnc (_key: string, _hex: string, _iv: string) {
   if (!_key || !_hex || !_iv) {
     throw new Error('Cannot perform mode encrypt w/o a key, text, and an IV');
   }
@@ -109,7 +109,7 @@ function doAesModeEnc (_key: string, _hex: string, _iv: string) {
   return sjcl.codec.hex.fromBits(res);
 }
 
-function doAesModeDec (_key: string, _hex: string, _iv: string, hexOut: boolean = false) {
+function doAesCtrDec (_key: string, _hex: string, _iv: string, hexOut: boolean = false) {
   if (!_key || !_hex || !_iv) {
     throw new Error('Cannot perform mode decrypt w/o a key, text, and an IV');
   }
@@ -160,7 +160,7 @@ export default Vue.extend({
           this.cipherOut1 = doAesEcbEnc(this.cipherKey, input);
           break;
           case 'aes-ctr':
-          this.cipherOut1 = doAesModeEnc(this.cipherKey, input, this.cipherIv);
+          this.cipherOut1 = doAesCtrEnc(this.cipherKey, input, this.cipherIv);
           break;
           default:
           throw new Error(`Unsupported mode: ${this.cipherMode}`);
@@ -178,7 +178,7 @@ export default Vue.extend({
           this.cipherIn2 = doAesEcbDec(this.cipherKey, this.cipherOut2, this.isHex);
           break;
           case 'aes-ctr':
-          this.cipherIn2 = doAesModeDec(this.cipherKey, this.cipherOut2, this.cipherIv, this.isHex);
+          this.cipherIn2 = doAesCtrDec(this.cipherKey, this.cipherOut2, this.cipherIv, this.isHex);
           break;
           default:
           throw new Error(`Unsupported mode: ${this.cipherMode}`);

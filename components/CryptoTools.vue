@@ -43,6 +43,13 @@
         type='button'
         role='tab'
       ) DSA
+    li.nav-item(role='presentation')
+      button.nav-link(
+        data-bs-toggle='tab'
+        data-bs-target='#utils'
+        type='button'
+        role='tab'
+      ) Utils.
   #myTabContent.tab-content
     HashWidget#hashes.tab-pane.fade.show.active(role='tabpanel')
     CipherWidget#ciphers.tab-pane.fade(role='tabpanel')
@@ -50,6 +57,7 @@
     KeyGenWidget#keygen.tab-pane.fade(role='tabpanel')
     KeyMixingWidget#keymix.tab-pane.fade(role='tabpanel')
     DsaWidget#dsa.tab-pane.fade(role='tabpanel')
+    ByteUtilsWidget#utils.tab-pane.fade(role='tabpanel')
 </template>
 
 <script>

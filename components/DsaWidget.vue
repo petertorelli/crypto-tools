@@ -6,10 +6,10 @@
   .row.mt-2
     .col-6
       select.form-select(v-model='dsaMode')
-        option(selected value='p384') ECDSA NIST-P384 / SHA256 (Det.)
-        option(value='p256') ECDSA SEC-P256R1 / SHA256 (Det.)
+        option(selected value='p384') ECDSA NIST-P384 / SHA256
+        option(value='p256') ECDSA SEC-P256R1 / SHA256
         option(value='ed25519') Ed25519
-        option(value='rsa') RSA
+        option(value='rsa') RSA (PKCS1 v1.5)
   .row.mt-2
     .col
       .alert.alert-danger(v-if='dsaError') {{dsaError}}
@@ -20,14 +20,24 @@
     .col-6
       label Message ({{ dsaMessage ? dsaMessage.length : 0 }} digits):
       textarea.form-control(rows=5 v-model='dsaMessage')
-  .row.mt-2
-    .col-12
-      label Hash ({{ dsaHash ? dsaHash.length : 0 }} digits):
-      textarea.form-control(rows=1 v-model='dsaHash')
+  .row.mt-2(v-if='dsaMode != "ed25519"')
+    .col-8
+      label Hash/HMAC ({{ dsaHash ? dsaHash.length : 0 }} digits):
+      .input-group
+        input.form-control(type='text' v-model='dsaHash')
+        button.btn.btn-outline-secondary(type='button'
+          @click='dsaHash=""') Clear
+      .small.text-muted(
+        v-if='dsaMode==="rsa"'
+        ) Note: the RSA library won't let you provide a hash/HMAC.
+      .small.text-muted(
+        v-else
+        ) Note: If using ECC, you can provide a hash; hit "Clear" to recompute
+          | a new SHA256 from the message when signing.
   .row.mt-2
     .col-12
       label Signature (ASN.1/DER: {{ dsaSignature ? dsaSignature.length : 0 }} digits):
-      textarea.form-control(rows=5 v-model='dsaSignature')
+      textarea.form-control(rows=5 v-model='dsaSignature' disabled)
   .row.mt-2
     .col
       button(@click='dsaSign()') Sign
@@ -72,8 +82,13 @@ export default Vue.extend({
           case "p384":
           case "p256": {
               const m = this.dsaMessage;
-              const hash = forge.md.sha256.create().update(m).digest().toHex();
-              this.dsaHash = hash;
+              let hash;
+              if (this.dsaHash) {
+                hash = this.dsaHash;
+              } else {
+                hash = forge.md.sha256.create().update(m).digest().toHex();
+                this.dsaHash = hash;
+              }
               const ec = new EC(this.dsaMode);
               const key = ec.keyFromPrivate(this.dsaPrivate);
               const sig = key.sign(hash);
@@ -82,10 +97,8 @@ export default Vue.extend({
             break;
           case "ed25519": {
               const m = this.dsaMessage;
-              const hash = forge.md.sha256.create().update(m).digest().toHex();
-              this.dsaHash = hash;
               const pri = this.dsaPrivate;
-              const signature = await ed.sign(hash, pri);
+              const signature = await ed.sign(Buffer.from(m), pri);
               const r = signature.slice(0, 32);
               const s = signature.slice(32, 64);
               let R = ed.utils.bytesToHex(r);
@@ -140,7 +153,7 @@ export default Vue.extend({
           }
           break;
         case "ed25519": {
-            const hash = this.dsaHash;
+            const m = Buffer.from(this.dsaMessage);
             const pub = this.dsaPublicKey;
             const sig = this.dsaSignature;
             const der = Buffer.from(sig, 'hex');
@@ -148,7 +161,7 @@ export default Vue.extend({
             let S = der.slice(4 + der[3] + 2, der.length).toString('hex');
             R = R.replace(/^00/, '');
             S = S.replace(/^00/, '');
-            this.dsaVerified = await ed.verify(R + S, hash, pub);
+            this.dsaVerified = await ed.verify(R + S, m, pub);
           }
           break;
         case 'rsa': {

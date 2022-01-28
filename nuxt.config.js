@@ -49,7 +49,7 @@ export default {
   // Modules: https://go.nuxtjs.dev/config-modules
   modules: [],
   router: {
-    base: '/crypto-tools/',
+    base: '/securemark/crypto-tools/',
   },
   // Build Configuration: https://go.nuxtjs.dev/config-build
   build: {},

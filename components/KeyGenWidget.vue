@@ -3,13 +3,14 @@
   .row.mt-2
     .col
       h1 PKI Key Generation
-      p All ECC keys are in raw format, RSA are PKCS1 V1.5 as ASN.1/DER
+      p All ECC keys are in raw format, RSA are ASN.1/DER
   .row.mt-2
     .col-4
       select.form-select(v-model='keygenMode')
         option(value='p256') ECC SECG-P256R1
         option(value='p384') ECC NIST-P384 
         option(value='curve25519') ECC C25519
+        option(value='ed25519') Ed25519
         option(value='2048') RSA 2048
         option(value='3072') RSA 3072
         option(value='4096') RSA 4096
@@ -86,15 +87,16 @@ export default Vue.extend({
             break;
           case "curve25519": {
               const pri = ed.utils.randomPrivateKey();
+              const pub = ed.curve25519.scalarMultBase(pri);
+              this.keygenPrivate = Buffer.from(pri).toString('hex');
+              this.keygenPublic = Buffer.from(pub).toString('hex');
+            }
+            break;
+          case "ed25519": {
+              const pri = ed.utils.randomPrivateKey();
               const pub = await ed.getPublicKey(pri);
               this.keygenPrivate = Buffer.from(pri).toString('hex');
               this.keygenPublic = Buffer.from(pub).toString('hex');
-              const Q = await ed.Point.fromPrivateKey(pri);
-              const R = ed.Point.fromHex(this.keygenPublic);
-              this.keygenPublicX = R.x.toString(16);
-              this.keygenPublicY = R.y.toString(16);
-              this.keygenPrivateX = Q.x.toString(16);
-              this.keygenPrivateY = Q.y.toString(16);
             }
             break;
           case "2048":
