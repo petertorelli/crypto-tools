@@ -7,7 +7,7 @@
   .row.mt-2
     .col-4
       select.form-select(v-model='keygenMode')
-        option(value='p256') ECC SECG-P256R1
+        option(value='p256') ECC SEC-P256R1
         option(value='p384') ECC NIST-P384 
         option(value='curve25519') ECC C25519
         option(value='ed25519') Ed25519

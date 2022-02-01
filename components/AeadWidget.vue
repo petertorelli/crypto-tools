@@ -21,7 +21,7 @@
       button(@click='aeadKey = genRandBytes(32)') Gen 256 bits
   .row.mt-2
     .col-6
-      label IV (hex), Must be 32 digits, currently is {{ aeadIv.length }}:
+      label IV (hex), {{ aeadIv.length }} digits:
       input.form-control(type='text' v-model='aeadIv')
   .row.mt-2
     .col-6

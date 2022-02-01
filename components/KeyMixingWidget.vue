@@ -60,8 +60,12 @@ export default Vue.extend({
       try {
         switch (this.kxMode) {
           case 'p384':
+            this.kxShared = doEcdh(this.kxMode, this.kxPrivate, this.kxPeerPublic);
+            this.kxShared = this.kxShared.padStart(96, '0');
+            break;
           case 'p256':
             this.kxShared = doEcdh(this.kxMode, this.kxPrivate, this.kxPeerPublic);
+            this.kxShared = this.kxShared.padStart(64, '0');
             break;
           case "x25519":  {
        //       const m = await ed.getSharedSecret(this.kxPrivate, this.kxPeerPublic);
