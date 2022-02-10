@@ -14,7 +14,7 @@
         option(value='sha512') SHA-512
   .row.mt-2
     .col-6
-      label Input ({{hashIn.length}}):
+      label Input ({{hashIn.length}}  {{ isHex ? "hex digits" : "characters" }}):
       textarea.form-control(v-model='hashIn' rows=5)
     .col-6
       label Digest ({{hashOut.length}}):
