@@ -31,6 +31,7 @@
     .col-6
       label Plaintext: ({{ cipherIn1.length}} chars/digits)
       textarea.form-control(v-model='cipherIn1')
+      small (Octet groups of non mod 16 size will be right padded with zeroes)
     .col-6
       label Ciphertext:
       textarea.form-control(:value='cipherOut1' disabled)
@@ -155,9 +156,27 @@ export default Vue.extend({
         } else if (!input.match(/^[0-9a-fA-F]+$/)) {
           throw new Error('Input is not valid hex');
         }
+        const inputArray: string[] = [];
+        if (input.length > 32) {
+          let end;
+          for (let i=0; i<input.length; i+=32) {
+            end = i + 31;
+            inputArray.push(input.substring(i, end));
+          }
+        } else {
+          inputArray.push(input);
+        }
+        let last = inputArray.pop();
+        if (last) {
+          const size = 32 - last.length;
+          last = last.padEnd(size, '0');
+          inputArray.push(last);
+        }
         switch (this.cipherMode) {
           case 'aes-ecb':
-          this.cipherOut1 = doAesEcbEnc(this.cipherKey, input);
+          for (const x of inputArray) {
+            this.cipherOut1 += doAesEcbEnc(this.cipherKey, x);
+          }
           break;
           case 'aes-ctr':
           this.cipherOut1 = doAesCtrEnc(this.cipherKey, input, this.cipherIv);
@@ -190,3 +209,8 @@ export default Vue.extend({
   }
 });
 </script>
+<style scoped>
+textarea, input {
+  font-family: consolas;
+}
+</style>

@@ -70,3 +70,8 @@ export default Vue.extend({
   }
 });
 </script>
+<style scoped>
+textarea, input {
+  font-family: consolas;
+}
+</style>

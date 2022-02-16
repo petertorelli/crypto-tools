@@ -2,14 +2,14 @@
 .container
   .row.mt-2
     .col
-      h1 DSA
+      h1 Sign/Verify
   .row.mt-2
     .col-6
       select.form-select(v-model='dsaMode')
-        option(value='p256') SEC-P256R1 / RFC6979
-        option(selected value='p384') NIST-P384 / RFC6979
+        option(value='p256') SEC-P256R1, RFC6979 + SHA256
+        option(selected value='p384') NIST-P384, RFC6979 + SHA256 [sic]
         option(value='ed25519') Ed25519
-        option(value='rsa') RSA (PKCS1 v1.5)
+        option(value='rsa') RSA (PKCS1 v1.5 + SHA256)
   .row.mt-2
     .col
       .alert.alert-danger(v-if='dsaError') {{dsaError}}
@@ -64,6 +64,7 @@ import Vue from 'vue';
 import forge from 'node-forge';
 import { ec as EC } from 'elliptic';
 import * as ed from '@noble/ed25519';
+import HASH from 'hash.js';
 
 export default Vue.extend({
   name: 'DsaWidget',
@@ -99,6 +100,7 @@ export default Vue.extend({
             */
               const ec = new EC(this.dsaMode);
               const key = ec.keyFromPrivate(this.dsaPrivate);
+              ec.hash = HASH.sha256;
               /**
                * 1. Elliptic is deterministic by default, see RFC6979
                * 2. The input message is the hash, which is converted to a
@@ -219,3 +221,8 @@ export default Vue.extend({
   }
 });
 </script>
+<style scoped>
+textarea, input {
+  font-family: consolas;
+}
+</style>

@@ -19,10 +19,10 @@
       .alert.alert-danger.mt-2(v-if='keygenError') {{keygenError}}
   .row.mt-2
     .col-6.mt-2
-      label Private Key ({{ keygenPrivate.length }} digits):
-      textarea.form-control(rows=5 v-model='keygenPrivate' disabled)
+      label Private Key ({{ keygenPrivate.length }} hex digits):
+      textarea.form-control(rows=5 v-model='keygenPrivate')
     .col-6.mt-2
-      label Public Key ({{ keygenPublic.length }} digits):
+      label Public Key ({{ keygenPublic.length }} hex digits):
       textarea.form-control(rows=5 :value='keygenPublic' disabled)
   .row.mt-2
     .col-6.mt-2
@@ -39,7 +39,8 @@
       textarea.form-control(:value='keygenPublicY' disabled)
   .row.mt-2
     .col
-      button(@click='genKey()') Generate
+      button.me-2(@click='genKey()') Generate Pair
+      button(@click='genFromPrivate()') Generate Public from Private
 
 </template>
 
@@ -126,6 +127,62 @@ export default Vue.extend({
         this.keygenError = error as string;
       }
     },
+    async genFromPrivate() {
+      try {
+        this.keygenPublic = '';
+        this.keygenPublicX = '';
+        this.keygenPublicY = '';
+        switch (this.keygenMode) {
+          case "p256":
+          case "p384": {
+              const ec = new EC(this.keygenMode);
+              const key = ec.keyFromPrivate(this.keygenPrivate);
+              const pad = this.keygenMode === 'p256' ? 64 : 96;
+              this.keygenPublicX = key.getPublic().getX().toString('hex').padStart(pad, '0');
+              this.keygenPublicY = key.getPublic().getY().toString('hex').padStart(pad, '0');
+              this.keygenPublic = this.keygenPublicX + this.keygenPublicY;
+            }
+            break;
+          case "curve25519": {
+              const pub = ed.curve25519.scalarMultBase(this.keygenPrivate);
+              this.keygenPublic = Buffer.from(pub).toString('hex');
+            }
+            break;
+          case "ed25519": {
+              const pub = await ed.getPublicKey(this.keygenPrivate);
+              this.keygenPublic = Buffer.from(pub).toString('hex');
+            }
+            break;
+          case "2048":
+          case "3072":
+          case "4096":
+            forge.pki.rsa.generateKeyPair({
+                bits: parseInt(this.keygenMode)
+              }, (err, keypair) => {
+              if (err) {
+                throw err;
+              }
+              const pub = forge.pki.publicKeyToAsn1(keypair.publicKey);
+              const pri = forge.pki.privateKeyToAsn1(keypair.privateKey);
+              const pubDer = forge.asn1.toDer(pub).toHex();
+              const priDer = forge.asn1.toDer(pri).toHex();
+              this.keygenPublic = pubDer;
+              this.keygenPrivate = priDer;
+            });
+            break;
+          default:
+            throw new Error(`Unsupported mode: ${this.keygenMode}`);
+        }
+      } catch (error) {
+        this.keygenError = error as string;
+      }
+    },
   }
 });
 </script>
+
+<style scoped>
+textarea, input {
+  font-family: consolas;
+}
+</style>

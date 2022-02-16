@@ -42,7 +42,7 @@
         data-bs-target='#dsa'
         type='button'
         role='tab'
-      ) DSA
+      ) Sign/Verify
     li.nav-item(role='presentation')
       button.nav-link(
         data-bs-toggle='tab'
