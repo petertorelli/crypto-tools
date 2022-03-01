@@ -971,6 +971,11 @@
   resolved "https://registry.yarnpkg.com/@humanwhocodes/object-schema/-/object-schema-1.2.1.tgz#b520529ec21d8e5945a1851dfd1c32e94e39ff45"
   integrity sha512-ZnQMnLV4e7hDlUvw8H+U8ASL02SS2Gn6+9Ac3wGGLIe7+je2AeAOxPY+izIPJDfFDb7eDjev0Us8MO1iFRN8hA==
 
+"@lapo/asn1js@^1.2.3":
+  version "1.2.3"
+  resolved "https://registry.yarnpkg.com/@lapo/asn1js/-/asn1js-1.2.3.tgz#a5b15a769cb31d550ccf9eed3725ffd83f47026b"
+  integrity sha512-6dWV0syRWrnZAcbygq/LRd9alZ5NIJVFTU4nmlbwJSigGh2O49nFFURcDP1KeKoxsXmxGfAPGj4soX1mrV2uAQ==
+
 "@noble/ed25519@^1.5.1":
   version "1.5.1"
   resolved "https://registry.yarnpkg.com/@noble/ed25519/-/ed25519-1.5.1.tgz#e5f602440b03046b02b79a49c143460bbb728e64"

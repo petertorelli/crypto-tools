@@ -40,7 +40,7 @@
   .row.mt-2
     .col
       button.me-2(@click='genKey()') Generate Pair
-      button(@click='genFromPrivate()') Generate Public from Private
+      button(@click='genFromPrivate()' v-if='keygenMode.match(/p|curve|ed/)') Generate Public from Private
 
 </template>
 
@@ -152,23 +152,6 @@ export default Vue.extend({
               const pub = await ed.getPublicKey(this.keygenPrivate);
               this.keygenPublic = Buffer.from(pub).toString('hex');
             }
-            break;
-          case "2048":
-          case "3072":
-          case "4096":
-            forge.pki.rsa.generateKeyPair({
-                bits: parseInt(this.keygenMode)
-              }, (err, keypair) => {
-              if (err) {
-                throw err;
-              }
-              const pub = forge.pki.publicKeyToAsn1(keypair.publicKey);
-              const pri = forge.pki.privateKeyToAsn1(keypair.privateKey);
-              const pubDer = forge.asn1.toDer(pub).toHex();
-              const priDer = forge.asn1.toDer(pri).toHex();
-              this.keygenPublic = pubDer;
-              this.keygenPrivate = priDer;
-            });
             break;
           default:
             throw new Error(`Unsupported mode: ${this.keygenMode}`);

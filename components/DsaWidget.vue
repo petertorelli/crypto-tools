@@ -9,7 +9,7 @@
         option(value='p256') SEC-P256R1, RFC6979 + SHA256
         option(selected value='p384') NIST-P384, RFC6979 + SHA256 [sic]
         option(value='ed25519') Ed25519
-        option(value='rsa') RSA (PKCS1 v1.5 + SHA256)
+        option(value='rsa') RSA (PKCS1 v1.5)
   .row.mt-2
     .col
       .alert.alert-danger(v-if='dsaError') {{dsaError}}
@@ -26,7 +26,7 @@
       .form-check.form-switch
         input.form-check-input(type='checkbox' v-model='isHex')
         label.form-check-label Input is {{ isHex ? 'Hex' : 'ASCII' }}
-  .row.mt-2(v-if='dsaMode == "p256" || dsaMode == "p384"')
+  .row.mt-2()
     .col-12
       label Hash to sign ({{ dsaHash.length }} hex digits):
       .input-group
@@ -37,7 +37,7 @@
       textarea.form-control(rows=2 v-model='dsaRawBytes' disabled)
   .row.mt-2
     .col-12
-      label Signature (ASN.1/DER: {{ dsaSignature.length }} hex digits):
+      label Signature ({{ dsaSignature.length }} hex digits):
       textarea.form-control(rows=5 v-model='dsaSignature' disabled)
   //-.row.mt-2
     .col-12
@@ -146,12 +146,15 @@ export default Vue.extend({
                   forge.util.createBuffer(
                     forge.util.binary.hex.decode(this.dsaPrivate)))) as forge.pki.rsa.PrivateKey;
               const md = forge.md.sha256.create();
-              const hash = md.update(this.dsaMessage, 'utf8');
-              // this error should go away when we move this to a TS library.
-              const signature = pri.sign(hash);
-              // N.B. I used 'utf8' as the encoder and it mixed in 3 byte chars.
+              if (this.isHex) {
+                md.update(forge.util.hexToBytes(this.dsaMessage));
+              } else {
+                md.update(this.dsaMessage, 'utf8');
+              }
+              const signature = pri.sign(md, 'RSASSA-PKCS1-V1_5');
               this.dsaSignature = Buffer.from(signature, 'ascii').toString('hex');
-              this.dsaHash = hash.digest().toHex();
+              // Without this, verify fails.
+              this.dsaHash = md.digest().toHex();
             }
             break;
           default:
@@ -200,14 +203,15 @@ export default Vue.extend({
           }
           break;
         case 'rsa': {
+            const md = forge.md.sha256.create();
+            md.update(this.dsaMessage, 'utf8');
             const pub = forge.pki.publicKeyFromAsn1(
               forge.asn1.fromDer(
                 forge.util.createBuffer(
                   forge.util.binary.hex.decode(this.dsaPublicKey)))) as forge.pki.rsa.PublicKey;
-            const hash = forge.util.hexToBytes(this.dsaHash);
             const sig = forge.util.hexToBytes(this.dsaSignature);
             // this error should go away when we move this to a TS library.
-            this.dsaVerified = pub.verify(hash,sig);
+            this.dsaVerified = pub.verify(md.digest().bytes(),sig);
           }
           break;
         default:
