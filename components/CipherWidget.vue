@@ -76,10 +76,11 @@ function doAesEcbEnc (_key: string, _hex: string) {
     throw new Error('Cannot perform ECB encrypt w/o a key and text');
   }
   const key = sjcl.codec.hex.toBits(_key.toLowerCase());
-  const txt = sjcl.codec.hex.toBits(_hex);
+  const txt = sjcl.codec.hex.toBits(_hex.toLowerCase());
   // eslint-disable-next-line new-cap
   const cipher = new sjcl.cipher.aes(key);
   const res = cipher.encrypt(txt);
+  console.log(_key, _hex, txt, res, sjcl.codec.hex.fromBits(res));
   return sjcl.codec.hex.fromBits(res);
 }
 
@@ -160,11 +161,18 @@ export default Vue.extend({
         if (input.length > 32) {
           let end;
           for (let i=0; i<input.length; i+=32) {
-            end = i + 31;
+            end = i + 32;
             inputArray.push(input.substring(i, end));
           }
         } else {
           inputArray.push(input);
+        }
+        // Pad remaining input array with ... zeroes?
+        const end = inputArray.length - 1;
+        if (inputArray[end].length !== 32) {
+          while (inputArray[end].length !== 32) {
+            inputArray[end] += '0';
+          }
         }
         let last = inputArray.pop();
         if (last) {

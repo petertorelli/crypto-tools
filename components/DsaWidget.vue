@@ -6,10 +6,10 @@
   .row.mt-2
     .col-6
       select.form-select(v-model='dsaMode')
-        option(value='p256') SEC-P256R1, RFC6979 + SHA256
-        option(selected value='p384') NIST-P384, RFC6979 + SHA256 [sic]
+        option(value='p256') SEC-P256R1, DetK + HMAC_SHA256
+        option(selected value='p384') NIST-P384, DetK + HMAC_SHA256 [sic]
         option(value='ed25519') Ed25519
-        option(value='rsa') RSA (PKCS1 v1.5)
+        option(value='rsassl') RSA (PKCS1)
   .row.mt-2
     .col
       .alert.alert-danger(v-if='dsaError') {{dsaError}}
@@ -17,32 +17,14 @@
     .col-6
       label Private Key ({{ dsaPrivate.length }} hex digits):
       textarea.form-control(rows=5 v-model='dsaPrivate')
-    .col-6(v-if='dsaMode == "rsa" || dsaMode == "ed25519"')
-      label Message to sign ({{ dsaMessage.length }} {{ isHex ? "hex digits" : "characters" }}):
-      textarea.form-control(rows=5 v-model='dsaMessage')
-  .row.mt-2(v-if='dsaMode == "rsa" || dsaMode == "ed25519"')
     .col-6
-    .col-6
-      .form-check.form-switch
-        input.form-check-input(type='checkbox' v-model='isHex')
-        label.form-check-label Input is {{ isHex ? 'Hex' : 'ASCII' }}
-  .row.mt-2()
-    .col-12
       label Hash to sign ({{ dsaHash.length }} hex digits):
       .input-group
         input.form-control(type='text' v-model='dsaHash')
-  .row.mt-2(v-if='dsaMode == "ed25519"')
-    .col-12
-      label Signature (Raw: {{ dsaRawBytes.length }} hex digits):
-      textarea.form-control(rows=2 v-model='dsaRawBytes' disabled)
   .row.mt-2
     .col-12
       label Signature ({{ dsaSignature.length }} hex digits):
-      textarea.form-control(rows=5 v-model='dsaSignature' disabled)
-  //-.row.mt-2
-    .col-12
-      label Raw Bytes ({{ dsaRawBytes.length }} digits):
-      textarea.form-control(rows=5 v-model='dsaRawBytes' disabled)
+      textarea.form-control(rows=5 v-model='dsaSignature' )
   .row.mt-2
     .col
       button(@click='dsaSign()') Sign
@@ -70,13 +52,11 @@ export default Vue.extend({
   name: 'DsaWidget',
   data() {
     return {
-      dsaMode      : 'rsa',
+      dsaMode      : 'rsassl',
       dsaPrivate   : '',
       dsaPublicKey : '',
-      dsaMessage   : 'test',
       dsaHash      : '',
       dsaSignature : '',
-      dsaRawBytes  : '',
       dsaVerified  : false,
       dsaError     : '',
       isHex        : false,
@@ -89,18 +69,11 @@ export default Vue.extend({
         switch (this.dsaMode) {
           case "p384":
           case "p256": {
-            /*
-              let m;
-              if (this.isHex) {
-                m = this.dsaMessage;
-              } else {
-                m = forge.util.hexToBytes(this.dsaMessage);
-              }
-              ec.hash = HASH.sha256;
-            */
               const ec = new EC(this.dsaMode);
-              const key = ec.keyFromPrivate(this.dsaPrivate);
               ec.hash = HASH.sha256;
+              // 306502300298d18ecf181ad97d1e2f067ad707f0ad10c2fff611b741821b2ed52de5a59323e98baefe3bd8517dd8b5072009fc86023100efc5fbae6d43a5317ad403e8ed5328f3bbc94073f40e1c8c5ddc8419269f9157a4c0eab4f7172f0aade3e9a6cab2d91b
+              // 3065023066cd28bdd6d914e563af5ef999e25a55045d4b754667659aa6a9e8c42f8bdf3cec6cbebe30881813ccb873c44eaacb56023100d56c7594b6943342268ad06c23fc87828ed3fa02de6eb68a0dd7143dae2ba96a5ef885914c5a0d493b787b065dc7d6c8
+              const key = ec.keyFromPrivate(this.dsaPrivate);
               /**
                * 1. Elliptic is deterministic by default, see RFC6979
                * 2. The input message is the hash, which is converted to a
@@ -111,50 +84,18 @@ export default Vue.extend({
             }
             break;
           case "ed25519": {
-              let m;
-              if (this.isHex) {
-                m = Buffer.from(this.dsaMessage, 'hex');
-              } else {
-                m = this.dsaMessage;
-              }
-              const pri = this.dsaPrivate;
-              const signature = await ed.sign(Buffer.from(m), pri);
-              const r = signature.slice(0, 32);
-              const s = signature.slice(32, 64);
-              let R = ed.utils.bytesToHex(r);
-              let S = ed.utils.bytesToHex(s);
-              if (r[0] & 0x80) {
-                R = '00' + R;
-              }
-              if (s[0] & 0x80) {
-                S = '00' + S;
-              }
-              const Rlen = R.length / 2;
-              const Slen = S.length / 2;
-              const tlen = Rlen + Slen + 4;
-              const DER
-                = '30' + tlen.toString(16)
-                + '02' + Rlen.toString(16) + R
-                + '02' + Slen.toString(16) + S;
-              this.dsaSignature = DER;
-              this.dsaRawBytes = ed.utils.bytesToHex(signature);
+              const signature = await ed.sign(this.dsaHash, this.dsaPrivate);
+              this.dsaSignature = ed.utils.bytesToHex(signature);
             }
             break;
-          case 'rsa': {
+          case 'rsassl': {
               const pri = forge.pki.privateKeyFromAsn1(
                 forge.asn1.fromDer(
                   forge.util.createBuffer(
                     forge.util.binary.hex.decode(this.dsaPrivate)))) as forge.pki.rsa.PrivateKey;
-              const md = forge.md.sha256.create();
-              if (this.isHex) {
-                md.update(forge.util.hexToBytes(this.dsaMessage));
-              } else {
-                md.update(this.dsaMessage, 'utf8');
-              }
-              const signature = pri.sign(md, 'RSASSA-PKCS1-V1_5');
+              const finalDigest = forge.util.hexToBytes(this.dsaHash);
+              const signature = pri.sign(finalDigest, 'NONE');
               this.dsaSignature = Buffer.from(signature, 'ascii').toString('hex');
-              // Without this, verify fails.
-              this.dsaHash = md.digest().toHex();
             }
             break;
           default:
@@ -170,49 +111,27 @@ export default Vue.extend({
         switch (this.dsaMode) {
           case "p384":
           case "p256": {
-            /*
-            let m;
-            if (this.isHex) {
-              m = this.dsaMessage;
-            } else {
-              m = forge.util.hexToBytes(this.dsaMessage);
-            }
-            const ec = new EC(this.dsaMode);
-            ec.hash = HASH.sha256;
-            const key = ec.keyFromPrivate(this.dsaPrivate);
-            // Elliptic is deterministic by default.
-            const sig = key.sign(m);
-            this.dsaSignature = sig.toDER('hex');
-            const pub = ec.keyFromPublic('04' + this.dsaPublicKey, 'hex');
-            */
             const ec = new EC(this.dsaMode);
             const pub = ec.keyFromPublic('04' + this.dsaPublicKey, 'hex');
             this.dsaVerified = pub.verify(this.dsaHash, this.dsaSignature);
           }
           break;
-        case "ed25519": {
-            const m = Buffer.from(this.dsaMessage);
-            const pub = this.dsaPublicKey;
-            const sig = this.dsaSignature;
-            const der = Buffer.from(sig, 'hex');
-            let R = der.slice(4, der[3] + 4).toString('hex');
-            let S = der.slice(4 + der[3] + 2, der.length).toString('hex');
-            R = R.replace(/^00/, '');
-            S = S.replace(/^00/, '');
-            this.dsaVerified = await ed.verify(R + S, m, pub);
-          }
+        case "ed25519":
+          this.dsaVerified = await ed.verify(
+            this.dsaSignature,
+            this.dsaHash,
+            this.dsaPublicKey);
           break;
-        case 'rsa': {
-            const md = forge.md.sha256.create();
-            md.update(this.dsaMessage, 'utf8');
-            const pub = forge.pki.publicKeyFromAsn1(
-              forge.asn1.fromDer(
-                forge.util.createBuffer(
-                  forge.util.binary.hex.decode(this.dsaPublicKey)))) as forge.pki.rsa.PublicKey;
-            const sig = forge.util.hexToBytes(this.dsaSignature);
-            // this error should go away when we move this to a TS library.
-            this.dsaVerified = pub.verify(md.digest().bytes(),sig);
-          }
+        case "rsassl":{
+              const pub = forge.pki.publicKeyFromAsn1(
+                forge.asn1.fromDer(
+                  forge.util.createBuffer(
+                    forge.util.binary.hex.decode(this.dsaPublicKey)))) as forge.pki.rsa.PublicKey;
+              const finalDigest = forge.util.hexToBytes(this.dsaHash);
+              const signature = forge.util.hexToBytes(this.dsaSignature);
+              this.dsaVerified = pub.verify(finalDigest, signature, 'NONE');
+            }
+
           break;
         default:
           break;
