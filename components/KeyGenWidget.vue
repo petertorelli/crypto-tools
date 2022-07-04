@@ -5,7 +5,7 @@
       h1 PKI Key Generation
       p All ECC keys are in raw format, RSA are ASN.1/DER
   .row.mt-2
-    .col-4
+    .col-sm-12.col-md-4
       select.form-select(v-model='keygenMode')
         option(value='p256') ECC SEC-P256R1
         option(value='p384') ECC NIST-P384 
@@ -18,30 +18,32 @@
     .col
       .alert.alert-danger.mt-2(v-if='keygenError') {{keygenError}}
   .row.mt-2
-    .col-6.mt-2
+    .col-sm-12.col-md-6.mt-2
       label Private Key ({{ keygenPrivate.length }} hex digits):
       textarea.form-control(rows=5 v-model='keygenPrivate')
-    .col-6.mt-2
+    .col-sm-12.col-md-6.mt-2
       label Public Key ({{ keygenPublic.length }} hex digits):
       textarea.form-control(rows=5 :value='keygenPublic' disabled)
-  .row.mt-2
-    .col-6.mt-2
+  .row.mt-2(v-if='!keygenMode.match(/2048|3072|4096|25519/)')
+    .col-sm-12.col-md-6.mt-2
+    //-.col-sm-12.col-md-6.mt-2
       label Private Key X:
       textarea.form-control(v-model='keygenPrivateX' disabled)
-    .col-6.mt-2
+    .col-sm-12.col-md-6.mt-2
       label Public Key X:
       textarea.form-control(:value='keygenPublicX' disabled)
-    .col-6.mt-2
+    .col-sm-12.col-md-6.mt-2
+    //-.col-sm-12.col-md-6.mt-2
       label Private Key Y:
       textarea.form-control(v-model='keygenPrivateY' disabled)
-    .col-6.mt-2
+    .col-sm-12.col-md-6.mt-2
       label Public Key Y:
       textarea.form-control(:value='keygenPublicY' disabled)
   .row.mt-2
-    .col
+    .col-12
       button.me-2(@click='genKey()') Generate Pair
       button(@click='genFromPrivate()' v-if='keygenMode.match(/p|curve|ed/)') Generate Public from Private
-
+  .mb-3
 </template>
 
 <script lang='ts'>

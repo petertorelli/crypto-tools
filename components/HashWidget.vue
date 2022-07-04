@@ -1,22 +1,20 @@
 <template lang='pug'>
 .container
-  .row.mt-2
-    .col
-      h1 Hashes
+  h1.mt-2 Hashes
   .row.mt-2
     .col
       .alert.alert-danger(v-if='hashError') {{hashError}}
   .row.mt-2
-    .col-3
+    .col-sm-12.col-md-3
       select.form-select(v-model='hashMode')
         option(selected value='sha256') SHA-256 
         option(value='sha384') SHA-384
         option(value='sha512') SHA-512
   .row.mt-2
-    .col-6
+    .col-sm-12.col-md-6
       label Input ({{hashIn.length}}  {{ isHex ? "hex digits" : "characters" }}):
       textarea.form-control(v-model='hashIn' rows=5)
-    .col-6
+    .col-sm-12.col-md-6
       label Digest ({{hashOut.length}}):
       textarea.form-control(:value='hashOut' rows=5 disabled)
   .row.mt-2
@@ -27,6 +25,7 @@
   .row.mt-2
     .col
       button(@click='computeHash()') Hash
+  .mb-3
 </template>
 
 <script lang='ts'>

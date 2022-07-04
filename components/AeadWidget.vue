@@ -1,11 +1,9 @@
 <template lang='pug'>
 .container
+  h1.mt-2 AEAD
   .row.mt-2
-    .col
-      h1 AEAD
-      p Should we include Associated Data and Nonce inputs?
   .row.mt-2
-    .col-3
+    .col-sm-12.col-md-3
       select.form-select(v-model='aeadMode')
         option(value='aes-ccm') AES-CCM
         option(value='aes-gcm') AES-GCM
@@ -15,29 +13,29 @@
       label Key (hex) must be 32, 48, or 64 digits ({{ aeadKey.length }}):
       input.form-control(type='text' v-model='aeadKey')
   .row.mt-2
-    .col-6
+    .col-12
       button.me-2(@click='aeadKey = genRandBytes(16)') Gen 128 bits
       button.me-2(@click='aeadKey = genRandBytes(24)') Gen 192 bits
       button(@click='aeadKey = genRandBytes(32)') Gen 256 bits
   .row.mt-2
-    .col-6
+    .col-sm-12.col-md-6
       label IV (hex), {{ aeadIv.length }} digits:
       input.form-control(type='text' v-model='aeadIv')
   .row.mt-2
-    .col-6
+    .col-sm-12.col-md-6
       button(@click='aeadIv = genRandBytes(16)') Gen 128 bits
   .row.mt-2
     .col
       .alert.alert-danger(v-if='aeadEncError') {{aeadEncError}}
   .row.mt-2
-    .col-6
+    .col-sm-12.col-md-6
       label Plaintext: ({{ aeadIn1.length }} chars/digits)
       textarea.form-control(v-model='aeadIn1')
-    .col-6
+    .col-sm-12.col-md-6
       label Ciphertext:
       textarea.form-control(:value='aeadOut1' disabled)
     .col-6
-    .col-6
+    .col-sm-12.col-md-6
       label Tag (hex)
       input.form-control(type='text' :value='aeadTag1' disabled)
   .row.mt-2
@@ -52,19 +50,19 @@
     .col
       .alert.alert-danger(v-if='aeadDecError') {{aeadDecError}}
   .row.mt-2
-    .col-6
+    .col-sm-12.col-md-6
       label Ciphertext (hex, {{ aeadOut2.length }} digits):
       textarea.form-control(v-model='aeadOut2')
-    .col-6
+    .col-sm-12.col-md-6
       label Plaintext:
       textarea.form-control(:value='aeadIn2' disabled)
-    .col-6
+    .col-sm-12.col-md-6
       label Tag (hex, {{ aeadTag2.length }} digits):
       input.form-control(type='text' v-model='aeadTag2')
   .row.mt-2
     .col
       button(@click='decAead()') Decrypt
-
+  .mb-3
 </template>
 
 <script lang='ts'>

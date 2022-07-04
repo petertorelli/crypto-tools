@@ -7,20 +7,22 @@
     .col
       .alert.alert-danger(v-if='utilError') {{utilError}}
   .row.mt-2
-    .col-6
-      label Text In ({{textIn.length}}):
-      textarea.form-control(v-model='textIn' rows=5)
-    .col-6
-      label Hex Out ({{hexOut.length}}):
-      textarea.form-control(v-model='hexOut' rows=5 )
     .col-12
-      label Code Out:
-      textarea.form-control(v-model='codeOut' rows=5).code
-  .row.mt-2
-    .col
-      button(@click='t2h()') Text to Hex
-      button(@click='h2c()') Hex to Code
-      button(@click='c2h()') Code to Hex
+      label Text ({{textData.length}}):
+      textarea.form-control(v-model='textData' rows=5)
+    .col-12.mt-2
+      button.me-2(@click='t2h()') Text to Hex
+    .col-12.mt-2
+      label Hex ({{hexData.length}}):
+      textarea.form-control(v-model='hexData' rows=5 )
+    .col-12.mt-2
+      button.me-2(@click='h2t()') Hex to Text
+      button.me-2(@click='h2c()') Hex to Code
+    .col-12.mt-2
+      label Code:
+      textarea.form-control(v-model='codeData' rows=5).code
+    .col-12.mt-2
+      button.me-2(@click='c2h()') Code to Hex
 </template>
 
 <script lang='ts'>
@@ -32,30 +34,39 @@ export default Vue.extend({
   name: 'ByteUtilsWidget',
   data() {
     return {
-      textIn: 'This is a long line of test, more than 16 chars.',
-      hexIn: '',
-      textOut: '',
-      hexOut: '',
-      codeOut: '',
+      textData: 'This is a long line of test, more than 16 chars.',
+      hexData: '',
+      codeData: '',
       utilError: '',
     }
   },
   methods: {
+    h2t() {
+      try {
+        this.utilError = '';
+        this.textData = '';
+        const buf = Buffer.from(this.hexData, 'hex');
+        const text = buf.toString('ascii');
+        this.textData = text;
+      } catch (error) {
+        this.utilError = String(error);
+      }
+    },
     t2h() {
-      this.hexOut = '';
-      const buf = Buffer.from(this.textIn, 'ascii');
+      this.hexData = '';
+      const buf = Buffer.from(this.textData, 'ascii');
       const hex = buf.toString('hex');
-      this.hexOut = hex;
+      this.hexData = hex;
     },
     h2c() {
-      this.codeOut = '';
+      this.codeData = '';
       this.utilError = '';
       try {
-        const buf = Buffer.from(this.hexOut, 'hex');
+        const buf = Buffer.from(this.hexData, 'hex');
         for (let x=1; x<buf.length+1; ++x) {
-          this.codeOut += sprintf("0x%02x,", buf[x-1]);
+          this.codeData += sprintf("0x%02x,", buf[x-1]);
           if ((x) % 16 === 0) {
-            this.codeOut += '\n';
+            this.codeData += '\n';
           }
         }
       } catch (error) {
@@ -63,11 +74,11 @@ export default Vue.extend({
       }
     },
     c2h() {
-      this.hexOut = '';
+      this.hexData = '';
       this.utilError = '';
-      this.hexOut = this.codeOut;
-      this.hexOut = this.hexOut.replace(/0x/gi, '');
-      this.hexOut = this.hexOut.replace(/[^0-9a-f]/gi, '');
+      this.hexData = this.codeData;
+      this.hexData = this.hexData.replace(/0x/gi, '');
+      this.hexData = this.hexData.replace(/[^0-9a-f]/gi, '');
     }
   }
 });

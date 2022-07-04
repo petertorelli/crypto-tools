@@ -4,7 +4,7 @@
     .col
       h1 Key Mixing
   .row.mt-2
-    .col-4
+    .col-sm-12.col-md-4
       select.form-select(v-model='kxMode')
         option(value='p256') ECDH SEC-P256R1
         option(value='p384') ECDH NIST-P384 
@@ -13,10 +13,10 @@
     .col
       .alert.alert-danger.mt-2(v-if='kxError') {{kxError}}
   .row.mt-2
-    .col-6.mt-2
+    .col-sm-12.col-md-6.mt-2
       label Private Key ({{ kxPrivate ? kxPrivate.length : 0 }} digits):
       textarea.form-control(rows=5 v-model='kxPrivate')
-    .col-6.mt-2
+    .col-sm-12.col-md-6.mt-2
       label Peer Public Key ({{ kxPeerPublic ? kxPeerPublic.length : 0 }} digits):
       textarea.form-control(rows=5 v-model='kxPeerPublic')
   .row.mt-2
@@ -26,7 +26,7 @@
   .row.mt-2
     .col
       button(@click='kxMix()') Mix
-
+  .mb-3
 </template>
 
 <script lang='ts'>

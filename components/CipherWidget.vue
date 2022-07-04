@@ -1,10 +1,9 @@
 <template lang='pug'>
 .container
+  h1.mt-2 Ciphers
   .row.mt-2
-    .col
-      h1 Ciphers
   .row.mt-2
-    .col-3
+    .col-sm-12.col-md-3
       select.form-select(v-model='cipherMode')
         option(selected value='aes-ecb') AES-ECB
         option(value='aes-ctr') AES-CTR
@@ -18,21 +17,21 @@
       button.me-2(@click='cipherKey = genRandBytes(24)') Gen 192 bits
       button(@click='cipherKey = genRandBytes(32)') Gen 256 bits
   .row.mt-2(v-if='cipherMode!="aes-ecb"')
-    .col-6
+    .col-sm-12.col-md-6
       label IV (hex), Must be 32 digits ({{ cipherIv.length }}):
       input.form-control(type='text' v-model='cipherIv')
   .row.mt-2(v-if='cipherMode!="aes-ecb"')
-    .col-6
+    .col-sm-12.col-md-6
       button(@click='cipherIv = genRandBytes(16)') Gen 128 bits
   .row.mt-2
     .col
       .alert.alert-danger(v-if='cipherEncError') {{cipherEncError}}
   .row.mt-2
-    .col-6
+    .col-sm-12.col-md-6
       label Plaintext: ({{ cipherIn1.length}} chars/digits)
       textarea.form-control(v-model='cipherIn1')
       small (Octet groups of non mod 16 size will be right padded with zeroes)
-    .col-6
+    .col-sm-12.col-md-6
       label Ciphertext:
       textarea.form-control(:value='cipherOut1' disabled)
   .row.mt-2
@@ -47,15 +46,16 @@
     .col
       .alert.alert-danger(v-if='cipherDecError') {{cipherDecError}}
   .row.mt-2
-    .col-6
+    .col-sm-12.col-md-6
       label Ciphertext (hex, {{ cipherOut2.length }} digits):
       textarea.form-control(v-model='cipherOut2')
-    .col-6
+    .col-sm-12.col-md-6
       label Plaintext:
       textarea.form-control(:value='cipherIn2' disabled)
   .row.mt-2
     .col
       button(@click='decCipher()') Decrypt
+  .mb-3
 
 </template>
 

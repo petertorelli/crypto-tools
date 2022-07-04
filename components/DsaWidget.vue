@@ -4,7 +4,7 @@
     .col
       h1 Sign/Verify
   .row.mt-2
-    .col-6
+    .col-sm-12.col-md-6
       select.form-select(v-model='dsaMode')
         option(value='p256') SEC-P256R1, DetK + HMAC_SHA256
         option(selected value='p384') NIST-P384, DetK + HMAC_SHA256 [sic]
@@ -14,10 +14,10 @@
     .col
       .alert.alert-danger(v-if='dsaError') {{dsaError}}
   .row.mt-2
-    .col-6
+    .col-sm-12.col-md-6
       label Private Key ({{ dsaPrivate.length }} hex digits):
       textarea.form-control(rows=5 v-model='dsaPrivate')
-    .col-6
+    .col-sm-12.col-md-6
       label Hash to sign ({{ dsaHash.length }} hex digits):
       .input-group
         input.form-control(type='text' v-model='dsaHash')
